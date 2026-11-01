@@ -23,7 +23,7 @@
     .overlay{position:fixed;z-index:5;inset:0;display:grid;place-items:center;padding:18px;background:rgba(5,11,17,.42);backdrop-filter:blur(6px);transition:opacity .25s}
     .overlay.hidden{opacity:0;pointer-events:none}.dialog{width:min(440px,100%);padding:30px;border:1px solid rgba(190,225,238,.25);border-radius:20px;background:linear-gradient(145deg,rgba(18,35,47,.96),rgba(8,17,26,.96));box-shadow:0 24px 90px #0008}
     .eyebrow{font:700 11px "Barlow Condensed";letter-spacing:.25em;color:var(--cyan)}h1{font:800 clamp(42px,9vw,64px)/.9 "Barlow Condensed";letter-spacing:.02em;margin:12px 0 8px}h1 span{color:var(--cyan)}.desc{font-size:12px;line-height:1.9;color:#b6c7d0;margin:18px 0 22px}
-    .primary{width:100%;padding:14px;border:0;border-radius:10px;background:var(--cyan);color:#10212a;font:700 13px "Noto Sans JP";cursor:pointer}.primary:hover{filter:brightness(1.08)}
+    .primary{width:100%;padding:14px;border:0;border-radius:10px;background:var(--cyan);color:#10212a;font:700 13px "Noto Sans JP";cursor:pointer}.primary:hover{filter:brightness(1.08)}.primary.secondary{margin-top:9px;background:rgba(120,225,233,.12);border:1px solid rgba(120,225,233,.35);color:var(--white)}.lobbyActions{display:grid;gap:0}.backBtn{margin-top:10px}.dialog section[hidden]{display:none}
     .settings{display:flex;gap:9px;margin:0 0 16px}.settings label{flex:1;font-size:10px;color:var(--muted)}select{display:block;width:100%;margin-top:6px;padding:9px;background:#172b39;color:white;border:1px solid var(--line);border-radius:8px}
     .toast{position:fixed;z-index:4;left:50%;top:22%;transform:translate(-50%,-8px);opacity:0;transition:.25s;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:10px 17px;font-size:12px;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
     #touch{display:none;position:fixed;z-index:3;bottom:18px;left:18px;right:18px;justify-content:space-between;pointer-events:none}.pad{display:flex;gap:10px}.touchbtn{width:58px;height:58px;border-radius:50%;border:1px solid #ffffff55;background:#0b1726a8;color:white;font-size:19px;pointer-events:auto;touch-action:none}
@@ -48,10 +48,39 @@
   <div class="toast" id="toast"></div>
   <div id="touch"><div class="pad"><button class="touchbtn" data-key="ArrowLeft">←</button><button class="touchbtn" data-key="ArrowRight">→</button></div><div class="pad"><button class="touchbtn" data-key="ArrowDown">−</button><button class="touchbtn" data-key="ArrowUp">＋</button></div></div>
   <div class="overlay" id="menu"><div class="dialog">
-    <div class="eyebrow">DOWNHILL / PROTOTYPE 0.1</div><h1>OWN THE<br><span>DESCENT.</span></h1>
-    <p class="desc">架空の日本の峠を、スケートボードで駆け下ろう。<br>コースを完走してベストタイムを更新しよう。</p>
-    <div class="settings"><label>CAMERA<select id="cameraSelect"><option value="chase">追従カメラ</option><option value="wide">ワイドカメラ</option><option value="first">主観カメラ</option></select></label><label>QUALITY<select id="quality"><option value="high">高</option><option value="low">軽量</option></select></label></div>
-    <button class="primary" id="startBtn">START RIDE →</button>
+    <div class="eyebrow">DOWNHILL / TOUGE RACING SYSTEM</div>
+    <section id="nameSetup" hidden>
+      <h1>RIDER<br><span>PROFILE.</span></h1>
+      <p class="desc">オンラインランキングで使用するプレイヤー名を登録。登録後は変更できません。</p>
+      <input id="playerNameInput" maxlength="16" autocomplete="off" placeholder="プレイヤー名（1〜16文字）" style="width:100%;padding:13px;border-radius:9px;border:1px solid var(--line);background:#172b39;color:white;margin:0 0 14px">
+      <button class="primary" id="registerNameBtn">この名前で登録 →</button>
+    </section>
+    <section id="lobbyHome" hidden>
+      <div class="brand">WELCOME RIDER</div><h1>OWN THE<br><span>DESCENT.</span></h1>
+      <p class="desc">PLAYER：<strong id="lobbyPlayerName"></strong><br>日本の峠を舞台にしたダウンヒル・タイムアタック。</p>
+      <div class="lobbyActions">
+        <button class="primary" id="singleBtn">SINGLE PLAY　→</button>
+        <button class="primary secondary" id="onlineBtn">ONLINE　→</button>
+        <button class="primary secondary" id="garageBtn">GARAGE / SETTINGS</button>
+      </div>
+    </section>
+    <section id="singlePanel" hidden>
+      <h1>SINGLE<br><span>PLAY.</span></h1><p class="desc">峠を走ってベストタイムを更新しよう。</p>
+      <div class="settings"><label>COURSE<select id="courseSelect"><option value="touge01">峠コース 01</option></select></label><label>CAMERA<select id="cameraSelect"><option value="chase">追従カメラ</option><option value="wide">ワイドカメラ</option><option value="first">主観カメラ</option></select></label></div>
+      <button class="primary" id="startBtn">START RIDE →</button><button class="control backBtn" data-back style="width:100%;margin-top:9px">LOBBYへ戻る</button>
+    </section>
+    <section id="onlinePanel" hidden>
+      <h1>ONLINE<br><span>RANKING.</span></h1>
+      <p class="desc">非同期オンライン対戦<br>世界ランキング・フレンドランキング・ゴースト共有に対応予定。オンラインサーバーは未接続のため、現在は準備中です。</p>
+      <div class="stat"><div class="label">PLAYER</div><div class="value" id="onlinePlayerName" style="font-size:20px"></div></div>
+      <button class="control backBtn" data-back style="width:100%;margin-top:16px">LOBBYへ戻る</button>
+    </section>
+    <section id="garagePanel" hidden>
+      <h1>GARAGE<br><span>/ SETTINGS.</span></h1>
+      <div class="settings"><label>CAMERA<select id="cameraSelectGarage"><option value="chase">追従カメラ</option><option value="wide">ワイドカメラ</option><option value="first">主観カメラ</option></select></label><label>QUALITY<select id="quality"><option value="high">高</option><option value="low">軽量</option></select></label></div>
+      <p class="desc">プレイヤー名：<strong id="garagePlayerName"></strong><br>登録後の名前変更には対応していません。</p>
+      <button class="control backBtn" data-back style="width:100%">LOBBYへ戻る</button>
+    </section>
   </div></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
@@ -154,7 +183,18 @@ function animate(){
 window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();keys.add(e.code);if(e.code==='Space'&&running)reset()});
 window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
 document.querySelectorAll('.touchbtn').forEach(btn=>{const code=btn.dataset.key;btn.addEventListener('pointerdown',e=>{e.preventDefault();keys.add(code);btn.setPointerCapture(e.pointerId)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])btn.addEventListener(ev,()=>keys.delete(code))});
+const NAME_KEY='downhill-fixed-player-name-v1';
+const panels=['nameSetup','lobbyHome','singlePanel','onlinePanel','garagePanel'];
+function showPanel(id){for(const p of panels)document.getElementById(p).hidden=p!==id;menu.classList.remove('hidden')}
+function initLobby(){const saved=localStorage.getItem(NAME_KEY);if(saved){document.querySelector('#lobbyPlayerName').textContent=saved;document.querySelector('#onlinePlayerName').textContent=saved;document.querySelector('#garagePlayerName').textContent=saved;showPanel('lobbyHome')}else showPanel('nameSetup')}
+document.querySelector('#registerNameBtn').addEventListener('click',()=>{const input=document.querySelector('#playerNameInput'),name=input.value.trim();if(!name||name.length>16){input.focus();showToast('1〜16文字で入力してください');return}localStorage.setItem(NAME_KEY,name);document.querySelector('#lobbyPlayerName').textContent=name;document.querySelector('#onlinePlayerName').textContent=name;document.querySelector('#garagePlayerName').textContent=name;showPanel('lobbyHome')});
+document.querySelector('#singleBtn').addEventListener('click',()=>showPanel('singlePanel'));
+document.querySelector('#onlineBtn').addEventListener('click',()=>showPanel('onlinePanel'));
+document.querySelector('#garageBtn').addEventListener('click',()=>showPanel('garagePanel'));
+document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>showPanel('lobbyHome')));
 document.querySelector('#startBtn').addEventListener('click',()=>{camMode=document.querySelector('#cameraSelect').value;document.querySelector('#cameraBtn').textContent='CAMERA: '+camMode.toUpperCase();start()});
+document.querySelector('#cameraSelectGarage').addEventListener('change',e=>{document.querySelector('#cameraSelect').value=e.target.value});
+initLobby();
 document.querySelector('#restartBtn').addEventListener('click',()=>running?reset():start());
 document.querySelector('#cameraBtn').addEventListener('click',()=>{camMode=camMode==='chase'?'wide':camMode==='wide'?'first':'chase';document.querySelector('#cameraBtn').textContent='CAMERA: '+camMode.toUpperCase()});
 document.querySelector('#quality').addEventListener('change',e=>{if(renderer)renderer.shadowMap.enabled=e.target.value==='high'});
