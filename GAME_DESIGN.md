@@ -1,37 +1,48 @@
-# DOWNHILL — Game Design
+# DOWNHILL v2.0 — Game Design
 
-## Concept
-A browser-based 3D downhill skateboard time-attack game set on a fictional Japanese mountain pass, with realistic anime-inspired visuals.
+## Vision
+A browser-based 3D arcade skateboard game set in a fictional Japanese downtown entertainment district. The visual style balances grounded urban detail with anime-like color and expressive comedy. Fun, readable gameplay takes priority over strict realism.
 
-## Core gameplay
-- Ride a skateboard downhill and reach the finish as quickly as possible.
-- Arcade-leaning handling: approachable steering, acceleration, braking, and carving.
-- Start with one complete course; design the course system so more routes can be added later.
-- Keyboard controls: WASD and arrow keys.
-- Camera selection: multiple camera views, including chase and first-person options.
+## Core decisions
+- Setting: Japanese繁華街 (busy shopping and entertainment streets), fictionalized.
+- Visual direction: a midpoint between realistic 3D and anime/stylized art.
+- Handling: responsive arcade physics with a hybrid weight-shift and steering model.
+- Mist allowance: 3 mistakes per run; the third mistake ends the run.
+- Tone: comedic crashes, expressive reactions, playful props and visual gags.
+- Core loop: avoid obstacles, use ramps, perform tricks, chain combos, reach the finish, improve score and time.
+- Single-player first. Online ranking and ghost sharing remain future features until a trusted backend exists.
 
-## Time attack and records
-- Save a local personal best.
-- Record runs for a local ghost replay.
-- Add an online leaderboard for global competition.
-- Treat online leaderboard scores as untrusted input: validate times server-side, rate-limit submissions, and never trust client-submitted scores.
+## Gameplay
+- Keyboard: WASD / arrow keys; touch controls on supported devices.
+- Acceleration, braking, steering, controlled drift, jumping and landing.
+- Tricks: ollie, aerial tricks, grind and combo scoring.
+- Obstacles: traffic cones, cardboard boxes, construction barriers, signs and moving hazards.
+- Ramps: standard, large, chained and trick-focused ramps.
+- Mistakes include obstacle collisions, failed landings and leaving the course. A mistake counter allows three mistakes.
+- Recovery after a mistake should return the rider to a safe, nearby course position with a brief comedic reaction.
 
-## Visual direction
-- Realistic anime-inspired art direction.
-- Japanese mountain pass with hairpin turns, guardrails, road markings, trees, rocks, and distant scenery.
-- Clear HUD for timer, speed, checkpoint progress, and restart.
+## Course direction
+1. Shopping street: introduce steering and basic obstacle avoidance.
+2. Construction zone: ramps, barriers and alternate lines.
+3. Office / entertainment district: rails, larger jumps and advanced combo opportunities.
 
-## Technical direction
-- Browser game, responsive for desktop and mobile.
-- Three.js for 3D rendering.
-- Keep gameplay and course data separate from rendering code.
-- Build a playable single-player prototype first. Add persistent online rankings after the core driving loop is stable.
-- Never embed privileged database or API secrets in client-side code.
+## Phase 0 — Foundation fixes
+- Align the start position with the course centerline and forward tangent.
+- Use one consistent heading convention for movement and visual orientation.
+- Apply board roll around the board's longitudinal local axis, matching the steering/lean direction.
+- Keep rider pose and board pose synchronized.
+- Validate statically before moving to new course content.
 
-## Initial milestones
-1. Create the 3D scene and a downhill course.
-2. Add a controllable skateboarder and arcade downhill physics.
-3. Add checkpoints, finish line, timer, and restart.
-4. Add camera selection and local best-time persistence.
-5. Add local ghost replay.
-6. Design and implement a secure online leaderboard backend.
+## Implementation roadmap
+1. **Phase 0 — Foundation fixes:** start alignment, board lean direction, camera and ground alignment.
+2. **Phase 1 — Arcade physics:** responsive steering, inertia, drift, jump/air/landing states and three-mistake system.
+3. **Phase 2 — Urban course:** fictional Japanese downtown streets, buildings, sidewalks, street props, obstacles and ramps.
+4. **Phase 3 — Tricks:** ollie, aerial tricks, grind, landing checks, combos and score multipliers.
+5. **Phase 4 — Presentation:** comedic crash/reaction animations, NPC reactions, sound, music, HUD and results.
+6. **Phase 5 — Expansion:** more courses, difficulty settings, deterministic ghosts and online features.
+
+## Technical and safety notes
+- Three.js browser prototype; keep privileged secrets out of client code.
+- Online features are not connected. Never imply otherwise.
+- Any future online leaderboard must validate runs server-side and rate-limit submissions.
+- Local name and record data may be lost when browser storage is cleared or on another device.
