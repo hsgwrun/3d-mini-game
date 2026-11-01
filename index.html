@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#101923">
+  <title>DOWNHILL — Touge Time Attack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{color-scheme:dark;--bg:#101923;--panel:rgba(12,21,30,.78);--line:rgba(210,232,245,.18);--cyan:#78e1e9;--white:#edf6fa;--muted:#9bb0bd}
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:"Noto Sans JP",sans-serif;color:var(--white)}
+    #game{position:fixed;inset:0}canvas{display:block}
+    .grain{pointer-events:none;position:fixed;inset:0;background:linear-gradient(180deg,rgba(5,12,18,.17),transparent 34%,rgba(5,12,18,.22));z-index:1}
+    .hud{position:fixed;z-index:2;inset:0;pointer-events:none;padding:clamp(14px,3vw,34px);display:flex;flex-direction:column;justify-content:space-between}
+    .top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+    .brand{font:800 13px "Barlow Condensed",sans-serif;letter-spacing:.22em;color:var(--cyan)}.sub{font-size:10px;letter-spacing:.18em;color:#b8cad4;margin-top:5px}
+    .stats{display:flex;gap:10px}.stat{min-width:106px;padding:10px 14px;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px);border-radius:12px}
+    .label{font-size:9px;letter-spacing:.16em;color:var(--muted)}.value{font:700 27px "Barlow Condensed",sans-serif;letter-spacing:.04em;margin-top:2px}.unit{font:500 11px "Noto Sans JP";color:var(--muted);margin-left:4px}
+    .bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}.hint{font-size:11px;color:#d1e0e7;text-shadow:0 1px 6px #091018;line-height:1.8}.hint b{color:var(--cyan);font-weight:700}
+    .controls{display:flex;gap:7px;pointer-events:auto}.control{border:1px solid var(--line);background:var(--panel);color:var(--white);padding:10px 13px;border-radius:9px;font:600 11px "Noto Sans JP";cursor:pointer;backdrop-filter:blur(14px)}.control:hover{border-color:var(--cyan)}
+    .overlay{position:fixed;z-index:5;inset:0;display:grid;place-items:center;padding:18px;background:rgba(5,11,17,.42);backdrop-filter:blur(6px);transition:opacity .25s}
+    .overlay.hidden{opacity:0;pointer-events:none}.dialog{width:min(440px,100%);padding:30px;border:1px solid rgba(190,225,238,.25);border-radius:20px;background:linear-gradient(145deg,rgba(18,35,47,.96),rgba(8,17,26,.96));box-shadow:0 24px 90px #0008}
+    .eyebrow{font:700 11px "Barlow Condensed";letter-spacing:.25em;color:var(--cyan)}h1{font:800 clamp(42px,9vw,64px)/.9 "Barlow Condensed";letter-spacing:.02em;margin:12px 0 8px}h1 span{color:var(--cyan)}.desc{font-size:12px;line-height:1.9;color:#b6c7d0;margin:18px 0 22px}
+    .primary{width:100%;padding:14px;border:0;border-radius:10px;background:var(--cyan);color:#10212a;font:700 13px "Noto Sans JP";cursor:pointer}.primary:hover{filter:brightness(1.08)}
+    .settings{display:flex;gap:9px;margin:0 0 16px}.settings label{flex:1;font-size:10px;color:var(--muted)}select{display:block;width:100%;margin-top:6px;padding:9px;background:#172b39;color:white;border:1px solid var(--line);border-radius:8px}
+    .toast{position:fixed;z-index:4;left:50%;top:22%;transform:translate(-50%,-8px);opacity:0;transition:.25s;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:10px 17px;font-size:12px;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
+    #touch{display:none;position:fixed;z-index:3;bottom:18px;left:18px;right:18px;justify-content:space-between;pointer-events:none}.pad{display:flex;gap:10px}.touchbtn{width:58px;height:58px;border-radius:50%;border:1px solid #ffffff55;background:#0b1726a8;color:white;font-size:19px;pointer-events:auto;touch-action:none}
+    @media(max-width:700px){.stats{gap:6px}.stat{min-width:80px;padding:8px 10px}.value{font-size:22px}.hint{max-width:58%;font-size:10px}.controls{gap:5px}.control{padding:9px}.brand{font-size:11px}}
+    @media(pointer:coarse){#touch{display:flex}.hint{display:none}}
+  </style>
+</head>
+<body>
+  <div id="game"></div><div class="grain"></div>
+  <div class="hud">
+    <div class="top">
+      <div><div class="brand">DOWNHILL / TOUGE PROJECT</div><div class="sub">JAPANESE MOUNTAIN PASS · TIME ATTACK</div></div>
+      <div class="stats">
+        <div class="stat"><div class="label">TIME</div><div class="value" id="time">00:00.00</div></div>
+        <div class="stat"><div class="label">SPEED</div><div class="value"><span id="speed">0</span><span class="unit">KM/H</span></div></div>
+        <div class="stat"><div class="label">BEST</div><div class="value" id="best">--:--.--</div></div>
+      </div>
+    </div>
+    <div class="bottom"><div class="hint"><b>W / ↑</b> ACCELERATE　 <b>S / ↓</b> BRAKE<br><b>A D / ← →</b> STEER　 <b>SPACE</b> RESTART</div>
+      <div class="controls"><button class="control" id="cameraBtn">CAMERA: CHASE</button><button class="control" id="restartBtn">RESTART ↻</button></div></div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <div id="touch"><div class="pad"><button class="touchbtn" data-key="ArrowLeft">←</button><button class="touchbtn" data-key="ArrowRight">→</button></div><div class="pad"><button class="touchbtn" data-key="ArrowDown">−</button><button class="touchbtn" data-key="ArrowUp">＋</button></div></div>
+  <div class="overlay" id="menu"><div class="dialog">
+    <div class="eyebrow">DOWNHILL / PROTOTYPE 0.1</div><h1>OWN THE<br><span>DESCENT.</span></h1>
+    <p class="desc">架空の日本の峠を、スケートボードで駆け下ろう。<br>コースを完走してベストタイムを更新しよう。</p>
+    <div class="settings"><label>CAMERA<select id="cameraSelect"><option value="chase">追従カメラ</option><option value="wide">ワイドカメラ</option><option value="first">主観カメラ</option></select></label><label>QUALITY<select id="quality"><option value="high">高</option><option value="low">軽量</option></select></label></div>
+    <button class="primary" id="startBtn">START RIDE →</button>
+  </div></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const mount=document.querySelector('#game'),timeEl=document.querySelector('#time'),speedEl=document.querySelector('#speed'),bestEl=document.querySelector('#best'),menu=document.querySelector('#menu'),toast=document.querySelector('#toast');
+let renderer,scene,camera,clock,board,rider,boardGroup,road,roadCurve,roadFrames=[],running=false,finished=false,elapsed=0,speed=0,lateral=0,steer=0,progress=0,lastProgress=0,camMode='chase',ghost=[],ghostMesh=null,ghostIndex=0;
+const keys=new Set(),roadWidth=12,courseLength=900;
+const BEST_KEY='downhill-best-v1',GHOST_KEY='downhill-ghost-v1';
+let best=Number(localStorage.getItem(BEST_KEY)||0);bestEl.textContent=best?format(best):'--:--.--';
+
+function format(s){const m=Math.floor(s/60),sec=(s%60).toFixed(2).padStart(5,'0');return String(m).padStart(2,'0')+':'+sec}
+function showToast(t){toast.textContent=t;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800)}
+function centerAt(t){const z=-t*courseLength;return new THREE.Vector3(Math.sin(t*Math.PI*3.2)*34+Math.sin(t*Math.PI*7.1)*10,2+Math.sin(t*Math.PI*2)*2,z)}
+function tangentAt(t){const a=centerAt(Math.max(0,t-.001)),b=centerAt(Math.min(1,t+.001));return b.sub(a).normalize()}
+function frameAt(t){const p=centerAt(t),tan=tangentAt(t),right=new THREE.Vector3(tan.z,0,-tan.x).normalize();return {p,tan,right}}
+function makeMat(color,rough=.8){return new THREE.MeshStandardMaterial({color,roughness:rough})}
+function addBox(parent,x,y,z,sx,sy,sz,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mat);m.position.set(x,y,z);parent.add(m);return m}
+function createScene(){
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x8cb2c1);scene.fog=new THREE.FogExp2(0x9ebbc0,.0024);
+ camera=new THREE.PerspectiveCamera(66,innerWidth/innerHeight,.1,1800);
+ renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(max-width:700px)').matches?1.5:2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=document.querySelector('#quality').value==='high';renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;mount.appendChild(renderer.domElement);
+ scene.add(new THREE.HemisphereLight(0xdaf2ff,0x3c5147,2));
+ const sun=new THREE.DirectionalLight(0xffe5c2,2.5);sun.position.set(-90,150,65);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-150;sun.shadow.camera.right=150;sun.shadow.camera.top=180;sun.shadow.camera.bottom=-180;scene.add(sun);
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),makeMat(0x526c55));ground.rotation.x=-Math.PI/2;ground.position.set(0,-4,-420);ground.receiveShadow=true;scene.add(ground);
+ createMountains();createRoad();createBoard();createGhost();
+ clock=new THREE.Clock();window.addEventListener('resize',resize);renderer.setAnimationLoop(animate);
+}
+function createMountains(){
+ const mat=makeMat(0x536d65),mat2=makeMat(0x718b7b),treeMat=makeMat(0x244b3b),trunkMat=makeMat(0x594b3e);
+ for(let i=0;i<45;i++){const x=(Math.random()-.5)*700,z=-Math.random()*1050-30,h=55+Math.random()*100,r=28+Math.random()*35;const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,6),i%2?mat:mat2);m.position.set(x,h/2-6,z);m.rotation.y=Math.random()*3;scene.add(m)}
+ for(let i=0;i<330;i++){const t=.02+Math.random()*.96,f=frameAt(t),side=Math.random()<.5?-1:1,dist=20+Math.random()*95;const x=f.p.x+f.right.x*side*dist,z=f.p.z+f.right.z*side*dist;const h=5+Math.random()*9;const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.25,.4,h*.35,5),trunkMat);trunk.position.set(x,h*.18-2,z);scene.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.8+Math.random()*1.8,h*.65,6),treeMat);crown.position.set(x,h*.58-2,z);scene.add(crown)}
+}
+function createRoad(){
+ const points=[];for(let i=0;i<=240;i++)points.push(centerAt(i/240));roadCurve=new THREE.CatmullRomCurve3(points);
+ const verts=[],indices=[],uv=[];for(let i=0;i<=500;i++){const t=i/500,f=frameAt(t);roadFrames.push(f);for(const side of [-1,1]){verts.push(f.p.x+f.right.x*roadWidth/2*side,f.p.y-1.1,f.p.z+f.right.z*roadWidth/2*side);uv.push(0,t*80)}}
+ for(let i=0;i<500;i++){const a=i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2)}
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();road=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x303940,roughness:.92,side:THREE.DoubleSide}));road.receiveShadow=true;scene.add(road);
+ const edgeMat=makeMat(0xe5e7d9),railMat=makeMat(0xb8c3c6,.4),postMat=makeMat(0x68777a);
+ for(let i=0;i<=500;i+=2){const f=roadFrames[i];for(const s of [-1,1]){const x=f.p.x+f.right.x*roadWidth*.48*s,z=f.p.z+f.right.z*roadWidth*.48*s;const stripe=addBox(scene,x,f.p.y-.9,z,.16,.06,1.2,edgeMat);stripe.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),f.tan);if(i%10===0){const px=f.p.x+f.right.x*(roadWidth*.62)*s,pz=f.p.z+f.right.z*(roadWidth*.62)*s;const post=addBox(scene,px,f.p.y+.05,pz,.13,1.1,.13,postMat);post.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),f.tan);}}
+ if(i%12===0){const dash=addBox(scene,f.p.x,f.p.y-.87,f.p.z,.13,.035,2.5,makeMat(0xd8d6c8));dash.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),f.tan)}
+ }
+ // finish arch
+ const f=frameAt(.985),archMat=makeMat(0x283944);for(const s of [-1,1]){const x=f.p.x+f.right.x*5.7*s,z=f.p.z+f.right.z*5.7*s;addBox(scene,x,f.p.y+3,z,.35,6,.4,archMat)}
+ addBox(scene,f.p.x,f.p.y+6,f.p.z,11.7,.45,.45,archMat);
+ const sign=addBox(scene,f.p.x,f.p.y+6.1,f.p.z-.3,5,.2,.06,makeMat(0x78e1e9));
+ // checkpoint gates
+ for(const t of [.25,.5,.75]){const q=frameAt(t);for(const s of [-1,1])addBox(scene,q.p.x+q.right.x*5.4*s,q.p.y+1.8,q.p.z+q.right.z*5.4*s,.17,3.6,.2,makeMat(0x82cad0))}
+}
+function createBoard(){
+ boardGroup=new THREE.Group();scene.add(boardGroup);
+ const deck=new THREE.Mesh(new THREE.BoxGeometry(1.05,.13,.29),makeMat(0x1c2630));deck.castShadow=true;boardGroup.add(deck);
+ const top=new THREE.Mesh(new THREE.BoxGeometry(.92,.025,.25),makeMat(0x62d5d9));top.position.y=.078;boardGroup.add(top);
+ for(const x of [-.34,.34]){const axle=addBox(boardGroup,x,-.13,0,.09,.1,.37,makeMat(0x9baeb7));for(const z of [-.18,.18]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.075,16),makeMat(0x202a31));wheel.rotation.x=Math.PI/2;wheel.position.set(x,-.19,z);boardGroup.add(wheel)}}
+ rider=new THREE.Group();boardGroup.add(rider);const bodyMat=makeMat(0x233c59),pantsMat=makeMat(0x242a34),skin=makeMat(0xe0b89d);
+ const torso=addBox(rider,0,.78,0,.35,.58,.23,bodyMat);torso.rotation.x=-.18;
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.17,16,12),skin);head.position.set(0,1.2,0);rider.add(head);
+ const hair=new THREE.Mesh(new THREE.SphereGeometry(.18,16,8,0,Math.PI*2,0,Math.PI*.62),makeMat(0x17252c));hair.position.copy(head.position).add(new THREE.Vector3(0,.025,-.015));rider.add(hair);
+ for(const s of [-1,1]){const leg=addBox(rider,s*.12,.35,.03,.14,.52,.16,pantsMat);leg.rotation.z=s*.08;const arm=addBox(rider,s*.23,.8,0,.12,.48,.13,bodyMat);arm.rotation.z=s*-.55}
+}
+function createGhost(){const g=new THREE.Mesh(new THREE.BoxGeometry(1.05,.15,.3),new THREE.MeshBasicMaterial({color:0x78e1e9,transparent:true,opacity:.35,wireframe:true}));g.visible=false;scene.add(g);ghostMesh=g}
+function resize(){if(!camera||!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(max-width:700px)').matches?1.5:2))}
+function currentFrame(){return frameAt(progress)}
+function start(){elapsed=0;speed=12;lateral=0;steer=0;progress=0;lastProgress=0;finished=false;ghost=[];running=true;menu.classList.add('hidden');clock.getDelta();showToast('GO!')}
+function reset(){running=false;start()}
+function complete(){running=false;finished=true;if(!best||elapsed<best){best=elapsed;localStorage.setItem(BEST_KEY,String(best));bestEl.textContent=format(best);showToast('NEW PERSONAL BEST!')}else showToast('FINISH — '+format(elapsed));try{localStorage.setItem(GHOST_KEY,JSON.stringify(ghost))}catch{};menu.classList.remove('hidden');menu.querySelector('h1').innerHTML='RUN<br><span>COMPLETE.</span>';menu.querySelector('.desc').innerHTML='TIME　'+format(elapsed)+'<br>もう一度走って記録を更新しよう。';document.querySelector('#startBtn').textContent='RUN AGAIN →'}
+function update(dt){
+ const accelerate=keys.has('ArrowUp')||keys.has('KeyW'),brake=keys.has('ArrowDown')||keys.has('KeyS'),left=keys.has('ArrowLeft')||keys.has('KeyA'),right=keys.has('ArrowRight')||keys.has('KeyD');
+ const target=(right?1:0)-(left?1:0);steer=THREE.MathUtils.damp(steer,target,5,dt);
+ speed+= (accelerate?20:6.8)*dt;if(brake)speed-=28*dt;speed-=speed*.018*dt;speed=THREE.MathUtils.clamp(speed,0,44);
+ const f=currentFrame(),curvature=Math.sin(progress*Math.PI*6.4)*.15+Math.cos(progress*Math.PI*14.2)*.08;
+ lateral+=steer*(3.5+speed*.16)*dt;lateral-=curvature*speed*.014*dt;lateral*=Math.pow(.985,dt*60);lateral=THREE.MathUtils.clamp(lateral,-roadWidth*.48,roadWidth*.48);
+ const normalizedSpeed=speed/courseLength;progress+=normalizedSpeed*dt;progress=Math.min(progress,1);
+ if(Math.abs(lateral)>roadWidth*.37)speed=Math.max(5,speed-13*dt);
+ elapsed+=dt;ghost.push({p:boardGroup.position.toArray(),r:boardGroup.rotation.y});
+ const next=currentFrame();boardGroup.position.copy(next.p).addScaledVector(next.right,lateral);boardGroup.position.y+=.25;boardGroup.rotation.set(.02,Math.atan2(next.tan.x,next.tan.z)+steer*.15,-steer*.12);
+ rider.rotation.z=-steer*.08;
+ if(progress>=1){complete();return}
+}
+function updateCamera(dt){
+ const f=currentFrame(),target=boardGroup.position.clone(),forward=f.tan.clone().negate();
+ let pos,look;
+ if(camMode==='first'){pos=target.clone().add(new THREE.Vector3(0,1.25,0)).addScaledVector(forward,.25);look=pos.clone().addScaledVector(forward,35)}
+ else{const distance=camMode==='wide'?15:9,height=camMode==='wide'?7:4.6;pos=target.clone().addScaledVector(forward,distance);pos.y+=height;look=target.clone().addScaledVector(forward,13);look.y+=1}
+ camera.position.lerp(pos,1-Math.pow(.001,dt));camera.lookAt(look);
+}
+function animate(){
+ const dt=Math.min(clock.getDelta(),.04);if(running)update(dt);if(boardGroup){updateCamera(dt);speedEl.textContent=Math.round(speed*3.6);timeEl.textContent=format(elapsed)}
+ renderer.render(scene,camera);
+}
+window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();keys.add(e.code);if(e.code==='Space'&&running)reset()});
+window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
+document.querySelectorAll('.touchbtn').forEach(btn=>{const code=btn.dataset.key;btn.addEventListener('pointerdown',e=>{e.preventDefault();keys.add(code);btn.setPointerCapture(e.pointerId)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])btn.addEventListener(ev,()=>keys.delete(code))});
+document.querySelector('#startBtn').addEventListener('click',()=>{camMode=document.querySelector('#cameraSelect').value;document.querySelector('#cameraBtn').textContent='CAMERA: '+camMode.toUpperCase();start()});
+document.querySelector('#restartBtn').addEventListener('click',()=>running?reset():start());
+document.querySelector('#cameraBtn').addEventListener('click',()=>{camMode=camMode==='chase'?'wide':camMode==='wide'?'first':'chase';document.querySelector('#cameraBtn').textContent='CAMERA: '+camMode.toUpperCase()});
+document.querySelector('#quality').addEventListener('change',e=>{if(renderer)renderer.shadowMap.enabled=e.target.value==='high'});
+createScene();boardGroup.position.copy(centerAt(0)).add(new THREE.Vector3(0,.25,0));camera.position.set(0,7,12);camera.lookAt(0,0,-12);
+</script>
+</body>
+</html>
