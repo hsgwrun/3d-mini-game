@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <meta name="theme-color" content="#101923">
-  <title>DOWNHILL — Touge Time Attack</title>
+  <title>DOWNHILL — Urban Arcade Skateboarding</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
@@ -35,7 +35,7 @@
   <div id="game"></div><div class="grain"></div>
   <div class="hud">
     <div class="top">
-      <div><div class="brand">DOWNHILL / TOUGE PROJECT</div><div class="sub">JAPANESE MOUNTAIN PASS · TIME ATTACK</div></div>
+      <div><div class="brand">DOWNHILL / URBAN ARCADE</div><div class="sub">JAPANESE DOWNTOWN · SKATE MAYHEM</div></div>
       <div class="stats">
         <div class="stat"><div class="label">TIME</div><div class="value" id="time">00:00.00</div></div>
         <div class="stat"><div class="label">SPEED</div><div class="value"><span id="speed">0</span><span class="unit">KM/H</span></div></div>
@@ -48,7 +48,7 @@
   <div class="toast" id="toast"></div>
   <div id="touch"><div class="pad"><button class="touchbtn" data-key="ArrowLeft">←</button><button class="touchbtn" data-key="ArrowRight">→</button></div><div class="pad"><button class="touchbtn" data-key="ArrowDown">−</button><button class="touchbtn" data-key="ArrowUp">＋</button></div></div>
   <div class="overlay" id="menu"><div class="dialog">
-    <div class="eyebrow">DOWNHILL / TOUGE RACING SYSTEM</div>
+    <div class="eyebrow">DOWNHILL / CITY MAYHEM</div>
     <section id="nameSetup" hidden>
       <h1>RIDER<br><span>PROFILE.</span></h1>
       <p class="desc">オンラインランキングで使用するプレイヤー名を登録。登録後は変更できません。</p>
@@ -57,7 +57,7 @@
     </section>
     <section id="lobbyHome" hidden>
       <div class="brand">WELCOME RIDER</div><h1>OWN THE<br><span>DESCENT.</span></h1>
-      <p class="desc">PLAYER：<strong id="lobbyPlayerName"></strong><br>日本の峠を舞台にしたダウンヒル・タイムアタック。</p>
+      <p class="desc">PLAYER：<strong id="lobbyPlayerName"></strong><br>日本の繁華街を駆け抜ける、コミカルなスケートボード・アクション。</p>
       <div class="lobbyActions">
         <button class="primary" id="singleBtn">SINGLE PLAY　→</button>
         <button class="primary secondary" id="onlineBtn">ONLINE　→</button>
@@ -65,8 +65,8 @@
       </div>
     </section>
     <section id="singlePanel" hidden>
-      <h1>SINGLE<br><span>PLAY.</span></h1><p class="desc">峠を走ってベストタイムを更新しよう。</p>
-      <div class="settings"><label>COURSE<select id="courseSelect"><option value="touge01">峠コース 01</option></select></label><label>CAMERA<select id="cameraSelect"><option value="chase">追従カメラ</option><option value="wide">ワイドカメラ</option><option value="first">主観カメラ</option></select></label></div>
+      <h1>SINGLE<br><span>PLAY.</span></h1><p class="desc">街を駆け抜けてベストタイムとハイスコアを更新しよう。</p>
+      <div class="settings"><label>COURSE<select id="courseSelect"><option value="touge01">繁華街コース 01</option></select></label><label>CAMERA<select id="cameraSelect"><option value="chase">追従カメラ</option><option value="wide">ワイドカメラ</option><option value="first">主観カメラ</option></select></label></div>
       <button class="primary" id="startBtn">START RIDE →</button><button class="control backBtn" data-back style="width:100%;margin-top:9px">LOBBYへ戻る</button>
     </section>
     <section id="onlinePanel" hidden>
@@ -95,7 +95,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 const mount=document.querySelector('#game'),timeEl=document.querySelector('#time'),speedEl=document.querySelector('#speed'),bestEl=document.querySelector('#best'),menu=document.querySelector('#menu'),toast=document.querySelector('#toast');
 let renderer,scene,camera,clock,board,rider,boardGroup,road,roadCurve,roadFrames=[],running=false,finished=false,elapsed=0,speed=0,lateral=0,steer=0,leanAngle=0,progress=0,lastProgress=0,headingYaw=0,worldPos=new THREE.Vector3(),worldVelocity=new THREE.Vector3(),camMode='chase',ghost=[],ghostMesh=null,ghostIndex=0;
 const keys=new Set(),roadWidth=12,courseLength=900;
-const BEST_KEY='downhill-best-v1',GHOST_KEY='downhill-ghost-v1';
+const BEST_KEY='downhill-best-v2',GHOST_KEY='downhill-ghost-v2';
 const obstacleColliders=[];let collisionCooldown=0,offroadTime=0;
 let best=Number(localStorage.getItem(BEST_KEY)||0);bestEl.textContent=best?format(best):'--:--.--';
 
@@ -153,7 +153,8 @@ function createBoard(){
 function createGhost(){const g=new THREE.Mesh(new THREE.BoxGeometry(1.05,.15,.3),new THREE.MeshBasicMaterial({color:0x78e1e9,transparent:true,opacity:.35,wireframe:true}));g.visible=false;scene.add(g);ghostMesh=g}
 function resize(){if(!camera||!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(max-width:700px)').matches?1.5:2))}
 function currentFrame(){return frameAt(progress)}
-function start(){elapsed=0;speed=0;lateral=0;steer=0;leanAngle=0;progress=0;lastProgress=0;offroadTime=0;collisionCooldown=0;finished=false;ghost=[];worldPos.copy(centerAt(0));worldPos.y=terrainHeight(worldPos.x,worldPos.z)+.3;worldVelocity.set(0,0,0);const initialFrame=frameAt(0);headingYaw=Math.atan2(-initialFrame.tan.x,-initialFrame.tan.z);boardGroup.position.copy(worldPos);boardGroup.rotation.set(0,Math.PI/2-headingYaw,0);running=true;menu.classList.add('hidden');clock.getDelta();showToast('PUSH OFF!')}
+function applyBoardPose(){const yaw=Math.PI/2-headingYaw;const yawQ=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),yaw);const rollQ=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),leanAngle*.55);boardGroup.quaternion.copy(yawQ).multiply(rollQ);rider.rotation.z=leanAngle*.28}
+function start(){elapsed=0;speed=0;lateral=0;steer=0;leanAngle=0;progress=.012;lastProgress=progress;offroadTime=0;collisionCooldown=0;finished=false;ghost=[];const initialFrame=frameAt(progress);worldPos.copy(initialFrame.p);worldPos.y=terrainHeight(worldPos.x,worldPos.z)+.3;worldVelocity.set(0,0,0);headingYaw=Math.atan2(initialFrame.tan.x,-initialFrame.tan.z);boardGroup.position.copy(worldPos);applyBoardPose();running=true;menu.classList.add('hidden');clock.getDelta();showToast('PUSH OFF!')}
 function reset(){running=false;start()}
 function complete(success=true,reason='RUN COMPLETE'){running=false;finished=true;let recordText='';if(success){if(!best||elapsed<best){best=elapsed;localStorage.setItem(BEST_KEY,String(best));bestEl.textContent=format(best);recordText='<br>NEW PERSONAL BEST!';showToast('NEW PERSONAL BEST!')}else showToast('FINISH — '+format(elapsed));try{localStorage.setItem(GHOST_KEY,JSON.stringify(ghost))}catch{}}else{showToast('OFF COURSE — RUN ENDED')}document.querySelector('#resultTitle').innerHTML=success?'RUN<br><span>COMPLETE.</span>':'RUN<br><span>FAILED.</span>';document.querySelector('#resultSummary').innerHTML=reason+'<br>TIME　'+format(elapsed)+recordText+'<br>BEST　'+(best?format(best):'--:--.--');showPanel('resultPanel')}
 function update(dt){
@@ -197,7 +198,7 @@ function update(dt){
  const offroad=Math.abs(lateral)>roadWidth*.5;
  elapsed+=dt;
  boardGroup.position.copy(worldPos);
- boardGroup.rotation.set(0,Math.PI/2-headingYaw,-leanAngle*.7);
+ applyBoardPose();
  // Obstacles are fatal in the strict time-attack ruleset.
  collisionCooldown=Math.max(0,collisionCooldown-dt);
  if(collisionCooldown===0){for(const o of obstacleColliders){const dx=worldPos.x-o.x,dz=worldPos.z-o.z;if(dx*dx+dz*dz<(o.r+.65)*(o.r+.65)&&Math.abs(worldPos.y-o.y)<(o.type==='tree'?5:18)){complete(false,'COLLISION');return}}}
@@ -237,7 +238,7 @@ initLobby();
 document.querySelector('#restartBtn').addEventListener('click',()=>running?reset():start());
 document.querySelector('#cameraBtn').addEventListener('click',()=>{camMode=camMode==='chase'?'wide':camMode==='wide'?'first':'chase';document.querySelector('#cameraBtn').textContent='CAMERA: '+camMode.toUpperCase()});
 document.querySelector('#quality').addEventListener('change',e=>{if(renderer)renderer.shadowMap.enabled=e.target.value==='high'});
-createScene();worldPos.copy(centerAt(0));worldPos.y=terrainHeight(worldPos.x,worldPos.z)+.3;boardGroup.position.copy(worldPos);const startFrame=frameAt(0);headingYaw=Math.atan2(-startFrame.tan.x,-startFrame.tan.z);camera.position.set(0,7,12);camera.lookAt(0,0,-12);
+createScene();progress=.012;const startFrame=frameAt(progress);worldPos.copy(startFrame.p);worldPos.y=terrainHeight(worldPos.x,worldPos.z)+.3;headingYaw=Math.atan2(startFrame.tan.x,-startFrame.tan.z);boardGroup.position.copy(worldPos);applyBoardPose();camera.position.set(worldPos.x,worldPos.y+7,worldPos.z+12);camera.lookAt(worldPos.x,worldPos.y,worldPos.z-12);
 </script>
 </body>
 </html>
