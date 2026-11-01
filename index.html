@@ -81,6 +81,13 @@
       <p class="desc">プレイヤー名：<strong id="garagePlayerName"></strong><br>登録後の名前変更には対応していません。</p>
       <button class="control backBtn" data-back style="width:100%">LOBBYへ戻る</button>
     </section>
+    <section id="resultPanel" hidden>
+      <div class="eyebrow">TIME ATTACK / RESULT</div>
+      <h1 id="resultTitle">RUN<br><span>COMPLETE.</span></h1>
+      <p class="desc" id="resultSummary"></p>
+      <button class="primary" id="runAgainBtn">RUN AGAIN →</button>
+      <button class="control backBtn" id="resultLobbyBtn" style="width:100%">LOBBYへ戻る</button>
+    </section>
   </div></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
@@ -147,7 +154,7 @@ function resize(){if(!camera||!renderer)return;camera.aspect=innerWidth/innerHei
 function currentFrame(){return frameAt(progress)}
 function start(){elapsed=0;speed=12;lateral=0;steer=0;progress=0;lastProgress=0;offroadTime=0;collisionCooldown=0;finished=false;ghost=[];running=true;menu.classList.add('hidden');clock.getDelta();showToast('GO!')}
 function reset(){running=false;start()}
-function complete(){running=false;finished=true;if(!best||elapsed<best){best=elapsed;localStorage.setItem(BEST_KEY,String(best));bestEl.textContent=format(best);showToast('NEW PERSONAL BEST!')}else showToast('FINISH — '+format(elapsed));try{localStorage.setItem(GHOST_KEY,JSON.stringify(ghost))}catch{};menu.classList.remove('hidden');menu.querySelector('h1').innerHTML='RUN<br><span>COMPLETE.</span>';menu.querySelector('.desc').innerHTML='TIME　'+format(elapsed)+'<br>もう一度走って記録を更新しよう。';document.querySelector('#startBtn').textContent='RUN AGAIN →'}
+function complete(success=true,reason='RUN COMPLETE'){running=false;finished=true;let recordText='';if(success){if(!best||elapsed<best){best=elapsed;localStorage.setItem(BEST_KEY,String(best));bestEl.textContent=format(best);recordText='<br>NEW PERSONAL BEST!';showToast('NEW PERSONAL BEST!')}else showToast('FINISH — '+format(elapsed));try{localStorage.setItem(GHOST_KEY,JSON.stringify(ghost))}catch{}}else{showToast('OFF COURSE — RUN ENDED')}document.querySelector('#resultTitle').innerHTML=success?'RUN<br><span>COMPLETE.</span>':'RUN<br><span>FAILED.</span>';document.querySelector('#resultSummary').innerHTML=reason+'<br>TIME　'+format(elapsed)+recordText+'<br>BEST　'+(best?format(best):'--:--.--');showPanel('resultPanel')}
 function update(dt){
  const accelerate=keys.has('ArrowUp')||keys.has('KeyW'),brake=keys.has('ArrowDown')||keys.has('KeyS'),left=keys.has('ArrowLeft')||keys.has('KeyA'),right=keys.has('ArrowRight')||keys.has('KeyD');
  const target=(left?1:0)-(right?1:0);steer=THREE.MathUtils.damp(steer,target,5,dt);
@@ -164,8 +171,8 @@ function update(dt){
  collisionCooldown=Math.max(0,collisionCooldown-dt);
  if(collisionCooldown===0){for(const o of obstacleColliders){const dx=boardGroup.position.x-o.x,dz=boardGroup.position.z-o.z;if(dx*dx+dz*dz<(o.r+.65)*(o.r+.65)&&Math.abs(boardGroup.position.y-o.y)<(o.type==='tree'?5:18)){speed*=.28;collisionCooldown=.8;showToast(o.type==='tree'?'TREE COLLISION!':'ROCK COLLISION!');break}}}
  ghost.push({p:boardGroup.position.toArray(),r:boardGroup.rotation.y});
- // コース外へ落ちたら、その地点付近から低速で復帰。
- if(offroadTime>1.8||boardGroup.position.y< -8){lateral=Math.sign(lateral||1)*(roadWidth*.62);speed=5;offroadTime=0;showToast('OFF COURSE — RECOVERING');}
+ // コース外に一定時間とどまるか、地形下へ落ちたら走行失敗。
+ if(offroadTime>1.8||boardGroup.position.y< -8){complete(false,'OFF COURSE');return;}
  rider.rotation.z=-steer*.08;
  if(progress>=1){complete();return}
 }
@@ -184,7 +191,7 @@ window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','Arr
 window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
 document.querySelectorAll('.touchbtn').forEach(btn=>{const code=btn.dataset.key;btn.addEventListener('pointerdown',e=>{e.preventDefault();keys.add(code);btn.setPointerCapture(e.pointerId)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])btn.addEventListener(ev,()=>keys.delete(code))});
 const NAME_KEY='downhill-fixed-player-name-v1';
-const panels=['nameSetup','lobbyHome','singlePanel','onlinePanel','garagePanel'];
+const panels=['nameSetup','lobbyHome','singlePanel','onlinePanel','garagePanel','resultPanel'];
 function showPanel(id){for(const p of panels)document.getElementById(p).hidden=p!==id;menu.classList.remove('hidden')}
 function initLobby(){const saved=localStorage.getItem(NAME_KEY);if(saved){document.querySelector('#lobbyPlayerName').textContent=saved;document.querySelector('#onlinePlayerName').textContent=saved;document.querySelector('#garagePlayerName').textContent=saved;showPanel('lobbyHome')}else showPanel('nameSetup')}
 document.querySelector('#registerNameBtn').addEventListener('click',()=>{const input=document.querySelector('#playerNameInput'),name=input.value.trim();if(!name||name.length>16){input.focus();showToast('1〜16文字で入力してください');return}localStorage.setItem(NAME_KEY,name);document.querySelector('#lobbyPlayerName').textContent=name;document.querySelector('#onlinePlayerName').textContent=name;document.querySelector('#garagePlayerName').textContent=name;showPanel('lobbyHome')});
@@ -194,6 +201,8 @@ document.querySelector('#garageBtn').addEventListener('click',()=>showPanel('gar
 document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>showPanel('lobbyHome')));
 document.querySelector('#startBtn').addEventListener('click',()=>{camMode=document.querySelector('#cameraSelect').value;document.querySelector('#cameraBtn').textContent='CAMERA: '+camMode.toUpperCase();start()});
 document.querySelector('#cameraSelectGarage').addEventListener('change',e=>{document.querySelector('#cameraSelect').value=e.target.value});
+document.querySelector('#runAgainBtn').addEventListener('click',()=>{showPanel('singlePanel');start()});
+document.querySelector('#resultLobbyBtn').addEventListener('click',()=>showPanel('lobbyHome'));
 initLobby();
 document.querySelector('#restartBtn').addEventListener('click',()=>running?reset():start());
 document.querySelector('#cameraBtn').addEventListener('click',()=>{camMode=camMode==='chase'?'wide':camMode==='wide'?'first':'chase';document.querySelector('#cameraBtn').textContent='CAMERA: '+camMode.toUpperCase()});
