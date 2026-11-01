@@ -60,6 +60,7 @@ const mount=document.querySelector('#game'),timeEl=document.querySelector('#time
 let renderer,scene,camera,clock,board,rider,boardGroup,road,roadCurve,roadFrames=[],running=false,finished=false,elapsed=0,speed=0,lateral=0,steer=0,progress=0,lastProgress=0,camMode='chase',ghost=[],ghostMesh=null,ghostIndex=0;
 const keys=new Set(),roadWidth=12,courseLength=900;
 const BEST_KEY='downhill-best-v1',GHOST_KEY='downhill-ghost-v1';
+const obstacleColliders=[];let collisionCooldown=0,offroadTime=0;
 let best=Number(localStorage.getItem(BEST_KEY)||0);bestEl.textContent=best?format(best):'--:--.--';
 
 function format(s){const m=Math.floor(s/60),sec=(s%60).toFixed(2).padStart(5,'0');return String(m).padStart(2,'0')+':'+sec}
@@ -81,8 +82,9 @@ function createScene(){
 }
 function createMountains(){
  const mat=makeMat(0x536d65),mat2=makeMat(0x718b7b),treeMat=makeMat(0x244b3b),trunkMat=makeMat(0x594b3e);
- for(let i=0;i<45;i++){const x=(Math.random()-.5)*700,z=-Math.random()*1050-30,h=55+Math.random()*100,r=28+Math.random()*35;const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,6),i%2?mat:mat2);m.position.set(x,h/2-6,z);m.rotation.y=Math.random()*3;scene.add(m)}
- for(let i=0;i<330;i++){const t=.02+Math.random()*.96,f=frameAt(t),side=Math.random()<.5?-1:1,dist=20+Math.random()*95;const x=f.p.x+f.right.x*side*dist,z=f.p.z+f.right.z*side*dist;const h=5+Math.random()*9;const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.25,.4,h*.35,5),trunkMat);trunk.position.set(x,h*.18-2,z);scene.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.8+Math.random()*1.8,h*.65,6),treeMat);crown.position.set(x,h*.58-2,z);scene.add(crown)}
+ // 山の裾が道路へ入り込まないよう、道路中心線から十分離して配置する。
+ for(let i=0,placed=0;placed<45&&i<900;i++){const x=(Math.random()-.5)*760,z=-Math.random()*1120-25,h=55+Math.random()*100,r=28+Math.random()*35;let clear=true;for(let j=0;j<=100;j++){const p=centerAt(j/100);if(Math.hypot(p.x-x,p.z-z)<r+roadWidth*.5+12){clear=false;break}}if(!clear)continue;const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,6),i%2?mat:mat2);m.position.set(x,h/2-6,z);m.rotation.y=Math.random()*3;scene.add(m);obstacleColliders.push({x,y:h/2-6,z,r:r*.72,type:'mountain'});placed++}
+ for(let i=0;i<330;i++){const t=.02+Math.random()*.96,f=frameAt(t),side=Math.random()<.5?-1:1,dist=20+Math.random()*95;const x=f.p.x+f.right.x*side*dist,z=f.p.z+f.right.z*side*dist;const h=5+Math.random()*9;const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.25,.4,h*.35,5),trunkMat);trunk.position.set(x,h*.18-2,z);scene.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.8+Math.random()*1.8,h*.65,6),treeMat);crown.position.set(x,h*.58-2,z);scene.add(crown);obstacleColliders.push({x,y:h*.45-2,z,r:1.7,type:'tree'})}
 }
 function createRoad(){
  const points=[];for(let i=0;i<=240;i++)points.push(centerAt(i/240));roadCurve=new THREE.CatmullRomCurve3(points);
@@ -114,7 +116,7 @@ function createBoard(){
 function createGhost(){const g=new THREE.Mesh(new THREE.BoxGeometry(1.05,.15,.3),new THREE.MeshBasicMaterial({color:0x78e1e9,transparent:true,opacity:.35,wireframe:true}));g.visible=false;scene.add(g);ghostMesh=g}
 function resize(){if(!camera||!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(max-width:700px)').matches?1.5:2))}
 function currentFrame(){return frameAt(progress)}
-function start(){elapsed=0;speed=12;lateral=0;steer=0;progress=0;lastProgress=0;finished=false;ghost=[];running=true;menu.classList.add('hidden');clock.getDelta();showToast('GO!')}
+function start(){elapsed=0;speed=12;lateral=0;steer=0;progress=0;lastProgress=0;offroadTime=0;collisionCooldown=0;finished=false;ghost=[];running=true;menu.classList.add('hidden');clock.getDelta();showToast('GO!')}
 function reset(){running=false;start()}
 function complete(){running=false;finished=true;if(!best||elapsed<best){best=elapsed;localStorage.setItem(BEST_KEY,String(best));bestEl.textContent=format(best);showToast('NEW PERSONAL BEST!')}else showToast('FINISH — '+format(elapsed));try{localStorage.setItem(GHOST_KEY,JSON.stringify(ghost))}catch{};menu.classList.remove('hidden');menu.querySelector('h1').innerHTML='RUN<br><span>COMPLETE.</span>';menu.querySelector('.desc').innerHTML='TIME　'+format(elapsed)+'<br>もう一度走って記録を更新しよう。';document.querySelector('#startBtn').textContent='RUN AGAIN →'}
 function update(dt){
@@ -122,19 +124,27 @@ function update(dt){
  const target=(right?1:0)-(left?1:0);steer=THREE.MathUtils.damp(steer,target,5,dt);
  speed+= (accelerate?20:6.8)*dt;if(brake)speed-=28*dt;speed-=speed*.018*dt;speed=THREE.MathUtils.clamp(speed,0,44);
  const f=currentFrame(),curvature=Math.sin(progress*Math.PI*6.4)*.15+Math.cos(progress*Math.PI*14.2)*.08;
- lateral+=steer*(3.5+speed*.16)*dt;lateral-=curvature*speed*.014*dt;lateral*=Math.pow(.985,dt*60);lateral=THREE.MathUtils.clamp(lateral,-roadWidth*.48,roadWidth*.48);
+ // 横方向の位置は慣性を保つ。道路中央へ自動で吸い戻す処理や強制クランプは行わない。
+ lateral+=steer*(3.5+speed*.16)*dt;lateral-=curvature*speed*.014*dt;lateral*=Math.pow(.9995,dt*60);
  const normalizedSpeed=speed/courseLength;progress+=normalizedSpeed*dt;progress=Math.min(progress,1);
- if(Math.abs(lateral)>roadWidth*.37)speed=Math.max(5,speed-13*dt);
- elapsed+=dt;ghost.push({p:boardGroup.position.toArray(),r:boardGroup.rotation.y});
- const next=currentFrame();boardGroup.position.copy(next.p).addScaledVector(next.right,lateral);boardGroup.position.y+=.25;boardGroup.rotation.set(.02,Math.atan2(next.tan.x,next.tan.z)+steer*.15,-steer*.12);
+ const offroad=Math.abs(lateral)>roadWidth*.5;
+ if(offroad){offroadTime+=dt;speed=Math.max(0,speed-10*dt)}else offroadTime=0;
+ elapsed+=dt;
+ const next=currentFrame();boardGroup.position.copy(next.p).addScaledVector(next.right,lateral);boardGroup.position.y+=.25-(offroad?Math.min(7,offroadTime*5):0);boardGroup.rotation.set(.02,Math.atan2(next.tan.x,next.tan.z)+steer*.15,-steer*.12);
+ // 木や山に接触したら衝突扱いにして大きく減速させる。
+ collisionCooldown=Math.max(0,collisionCooldown-dt);
+ if(collisionCooldown===0){for(const o of obstacleColliders){const dx=boardGroup.position.x-o.x,dz=boardGroup.position.z-o.z;if(dx*dx+dz*dz<(o.r+.65)*(o.r+.65)&&Math.abs(boardGroup.position.y-o.y)<(o.type==='tree'?5:18)){speed*=.28;collisionCooldown=.8;showToast(o.type==='tree'?'TREE COLLISION!':'ROCK COLLISION!');break}}}
+ ghost.push({p:boardGroup.position.toArray(),r:boardGroup.rotation.y});
+ // コース外へ落ちたら、その地点付近から低速で復帰。
+ if(offroadTime>1.8||boardGroup.position.y< -8){lateral=Math.sign(lateral||1)*(roadWidth*.62);speed=5;offroadTime=0;showToast('OFF COURSE — RECOVERING');}
  rider.rotation.z=-steer*.08;
  if(progress>=1){complete();return}
 }
 function updateCamera(dt){
- const f=currentFrame(),target=boardGroup.position.clone(),forward=f.tan.clone().negate();
+ const f=currentFrame(),target=boardGroup.position.clone(),forward=f.tan.clone();
  let pos,look;
  if(camMode==='first'){pos=target.clone().add(new THREE.Vector3(0,1.25,0)).addScaledVector(forward,.25);look=pos.clone().addScaledVector(forward,35)}
- else{const distance=camMode==='wide'?15:9,height=camMode==='wide'?7:4.6;pos=target.clone().addScaledVector(forward,distance);pos.y+=height;look=target.clone().addScaledVector(forward,13);look.y+=1}
+ else{const distance=camMode==='wide'?15:9,height=camMode==='wide'?7:4.6;pos=target.clone().addScaledVector(forward,-distance);pos.y+=height;look=target.clone().addScaledVector(forward,13);look.y+=1}
  camera.position.lerp(pos,1-Math.pow(.001,dt));camera.lookAt(look);
 }
 function animate(){
