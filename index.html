@@ -83,7 +83,7 @@ function createScene(){
 function createMountains(){
  const mat=makeMat(0x536d65),mat2=makeMat(0x718b7b),treeMat=makeMat(0x244b3b),trunkMat=makeMat(0x594b3e);
  // 山の裾が道路へ入り込まないよう、道路中心線から十分離して配置する。
- for(let i=0,placed=0;placed<45&&i<900;i++){const x=(Math.random()-.5)*760,z=-Math.random()*1120-25,h=55+Math.random()*100,r=28+Math.random()*35;let clear=true;for(let j=0;j<=100;j++){const p=centerAt(j/100);if(Math.hypot(p.x-x,p.z-z)<r+roadWidth*.5+12){clear=false;break}}if(!clear)continue;const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,6),i%2?mat:mat2);m.position.set(x,h/2-6,z);m.rotation.y=Math.random()*3;scene.add(m);obstacleColliders.push({x,y:h/2-6,z,r:r*.72,type:'mountain'});placed++}
+ for(let i=0,placed=0;placed<45&&i<900;i++){const x=(Math.random()-.5)*760,z=-Math.random()*1120-25,h=55+Math.random()*100,r=28+Math.random()*35;let clear=true;for(let j=0;j<=100;j++){const p=centerAt(j/100);if(Math.hypot(p.x-x,p.z-z)<r+roadWidth*.5+12){clear=false;break}}if(!clear)continue;const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,6),i%2?mat:mat2);m.position.set(x,h/2-6,z);m.rotation.y=Math.random()*3;scene.add(m);obstacleColliders.push({x,y:0,z,r:r*.72,type:'mountain'});placed++}
  for(let i=0;i<330;i++){const t=.02+Math.random()*.96,f=frameAt(t),side=Math.random()<.5?-1:1,dist=20+Math.random()*95;const x=f.p.x+f.right.x*side*dist,z=f.p.z+f.right.z*side*dist;const h=5+Math.random()*9;const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.25,.4,h*.35,5),trunkMat);trunk.position.set(x,h*.18-2,z);scene.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.8+Math.random()*1.8,h*.65,6),treeMat);crown.position.set(x,h*.58-2,z);scene.add(crown);obstacleColliders.push({x,y:h*.45-2,z,r:1.7,type:'tree'})}
 }
 function createRoad(){
