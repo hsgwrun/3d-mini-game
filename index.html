@@ -114,24 +114,23 @@ function createScene(){
  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(max-width:700px)').matches?1.5:2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=document.querySelector('#quality').value==='high';renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;mount.appendChild(renderer.domElement);
  scene.add(new THREE.HemisphereLight(0xdaf2ff,0x3c5147,2));
  const sun=new THREE.DirectionalLight(0xffe5c2,2.5);sun.position.set(-90,150,65);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-150;sun.shadow.camera.right=150;sun.shadow.camera.top=180;sun.shadow.camera.bottom=-180;scene.add(sun);
- const ground=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),makeMat(0x526c55));ground.rotation.x=-Math.PI/2;ground.position.set(0,-4,-420);ground.receiveShadow=true;scene.add(ground);
- createMountains();createRoad();createBoard();createGhost();
+ createTerrain();createMountains();createRoad();createBoard();createGhost();
  clock=new THREE.Clock();window.addEventListener('resize',resize);renderer.setAnimationLoop(animate);
 }
 function createMountains(){
  const mat=makeMat(0x536d65),mat2=makeMat(0x718b7b),treeMat=makeMat(0x244b3b),trunkMat=makeMat(0x594b3e);
  // 山の裾が道路へ入り込まないよう、道路中心線から十分離して配置する。
- for(let i=0,placed=0;placed<45&&i<900;i++){const x=(Math.random()-.5)*760,z=-Math.random()*1120-25,h=55+Math.random()*100,r=28+Math.random()*35;let clear=true;for(let j=0;j<=100;j++){const p=centerAt(j/100);if(Math.hypot(p.x-x,p.z-z)<r+roadWidth*.5+12){clear=false;break}}if(!clear)continue;const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,6),i%2?mat:mat2);m.position.set(x,h/2-6,z);m.rotation.y=Math.random()*3;scene.add(m);obstacleColliders.push({x,y:0,z,r:r*.72,type:'mountain'});placed++}
- for(let i=0;i<330;i++){const t=.02+Math.random()*.96,f=frameAt(t),side=Math.random()<.5?-1:1,dist=20+Math.random()*95;const x=f.p.x+f.right.x*side*dist,z=f.p.z+f.right.z*side*dist;const h=5+Math.random()*9;const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.25,.4,h*.35,5),trunkMat);trunk.position.set(x,h*.18-2,z);scene.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.8+Math.random()*1.8,h*.65,6),treeMat);crown.position.set(x,h*.58-2,z);scene.add(crown);obstacleColliders.push({x,y:h*.45-2,z,r:1.7,type:'tree'})}
+ for(let i=0,placed=0;placed<45&&i<900;i++){const x=(Math.random()-.5)*760,z=-Math.random()*1120-25,h=55+Math.random()*100,r=28+Math.random()*35;let clear=true;for(let j=0;j<=100;j++){const p=centerAt(j/100);if(Math.hypot(p.x-x,p.z-z)<r+roadWidth*.5+12){clear=false;break}}if(!clear)continue;const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,6),i%2?mat:mat2);m.position.set(x,terrainHeight(x,z)+h/2,z);m.rotation.y=Math.random()*3;scene.add(m);obstacleColliders.push({x,y:terrainHeight(x,z)+8,z,r:r*.72,type:'mountain'});placed++}
+ for(let i=0;i<330;i++){const t=.02+Math.random()*.96,f=frameAt(t),side=Math.random()<.5?-1:1,dist=20+Math.random()*95;const x=f.p.x+f.right.x*side*dist,z=f.p.z+f.right.z*side*dist;const h=5+Math.random()*9;const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.25,.4,h*.35,5),trunkMat);const baseY=terrainHeight(x,z);trunk.position.set(x,baseY+h*.175,z);scene.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.8+Math.random()*1.8,h*.65,6),treeMat);crown.position.set(x,baseY+h*.675,z);scene.add(crown);obstacleColliders.push({x,y:baseY+h*.5,z,r:1.7,type:'tree'})}
 }
 function createRoad(){
  const points=[];for(let i=0;i<=240;i++)points.push(centerAt(i/240));roadCurve=new THREE.CatmullRomCurve3(points);
- const verts=[],indices=[],uv=[];for(let i=0;i<=500;i++){const t=i/500,f=frameAt(t);roadFrames.push(f);for(const side of [-1,1]){verts.push(f.p.x+f.right.x*roadWidth/2*side,f.p.y-1.1,f.p.z+f.right.z*roadWidth/2*side);uv.push(0,t*80)}}
+ const verts=[],indices=[],uv=[];for(let i=0;i<=500;i++){const t=i/500,f=frameAt(t);roadFrames.push(f);for(const side of [-1,1]){const x=f.p.x+f.right.x*roadWidth/2*side,z=f.p.z+f.right.z*roadWidth/2*side;verts.push(x,terrainHeight(x,z)+.025,z);uv.push(0,t*80)}}
  for(let i=0;i<500;i++){const a=i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2)}
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();road=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x303940,roughness:.92,side:THREE.DoubleSide}));road.receiveShadow=true;scene.add(road);
  const edgeMat=makeMat(0xe5e7d9),railMat=makeMat(0xb8c3c6,.4),postMat=makeMat(0x68777a);
- for(let i=0;i<=500;i+=2){const f=roadFrames[i];for(const s of [-1,1]){const x=f.p.x+f.right.x*roadWidth*.48*s,z=f.p.z+f.right.z*roadWidth*.48*s;const stripe=addBox(scene,x,f.p.y-.9,z,.16,.06,1.2,edgeMat);stripe.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),f.tan);if(i%10===0){const px=f.p.x+f.right.x*(roadWidth*.62)*s,pz=f.p.z+f.right.z*(roadWidth*.62)*s;const post=addBox(scene,px,f.p.y+.05,pz,.13,1.1,.13,postMat);post.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),f.tan);}}
- if(i%12===0){const dash=addBox(scene,f.p.x,f.p.y-.87,f.p.z,.13,.035,2.5,makeMat(0xd8d6c8));dash.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),f.tan)}
+ for(let i=0;i<=500;i+=2){const f=roadFrames[i];for(const s of [-1,1]){const x=f.p.x+f.right.x*roadWidth*.48*s,z=f.p.z+f.right.z*roadWidth*.48*s;const stripe=addBox(scene,x,terrainHeight(x,z)+.08,z,.16,.06,1.2,edgeMat);stripe.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),f.tan);if(i%10===0){const px=f.p.x+f.right.x*(roadWidth*.62)*s,pz=f.p.z+f.right.z*(roadWidth*.62)*s;const post=addBox(scene,px,terrainHeight(px,pz)+.55,pz,.13,1.1,.13,postMat);post.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),f.tan);}}
+ if(i%12===0){const dash=addBox(scene,f.p.x,terrainHeight(f.p.x,f.p.z)+.08,f.p.z,.13,.035,2.5,makeMat(0xd8d6c8));dash.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),f.tan)}
  }
  // finish arch
  const f=frameAt(.985),archMat=makeMat(0x283944);for(const s of [-1,1]){const x=f.p.x+f.right.x*5.7*s,z=f.p.z+f.right.z*5.7*s;addBox(scene,x,f.p.y+3,z,.35,6,.4,archMat)}
@@ -168,7 +167,7 @@ function update(dt){
  const offroad=Math.abs(lateral)>roadWidth*.5;
  if(offroad){offroadTime+=dt;speed=Math.max(0,speed-10*dt)}else offroadTime=0;
  elapsed+=dt;
- const next=currentFrame();boardGroup.position.copy(next.p).addScaledVector(next.right,lateral);boardGroup.position.y+=.25-(offroad?Math.min(7,offroadTime*5):0);boardGroup.rotation.set(.02,Math.atan2(next.tan.x,next.tan.z)+steer*.15,-steer*.12);
+ const next=currentFrame();boardGroup.position.copy(next.p).addScaledVector(next.right,lateral);boardGroup.position.y-=.8+(offroad?Math.min(7,offroadTime*5):0);boardGroup.rotation.set(.02,Math.atan2(next.tan.x,next.tan.z)+steer*.15,-steer*.12);
  // 木や山に接触したら衝突扱いにして大きく減速させる。
  collisionCooldown=Math.max(0,collisionCooldown-dt);
  if(collisionCooldown===0){for(const o of obstacleColliders){const dx=boardGroup.position.x-o.x,dz=boardGroup.position.z-o.z;if(dx*dx+dz*dz<(o.r+.65)*(o.r+.65)&&Math.abs(boardGroup.position.y-o.y)<(o.type==='tree'?5:18)){speed*=.28;collisionCooldown=.8;showToast(o.type==='tree'?'TREE COLLISION!':'ROCK COLLISION!');break}}}
@@ -209,7 +208,7 @@ initLobby();
 document.querySelector('#restartBtn').addEventListener('click',()=>running?reset():start());
 document.querySelector('#cameraBtn').addEventListener('click',()=>{camMode=camMode==='chase'?'wide':camMode==='wide'?'first':'chase';document.querySelector('#cameraBtn').textContent='CAMERA: '+camMode.toUpperCase()});
 document.querySelector('#quality').addEventListener('change',e=>{if(renderer)renderer.shadowMap.enabled=e.target.value==='high'});
-createScene();boardGroup.position.copy(centerAt(0)).add(new THREE.Vector3(0,.25,0));camera.position.set(0,7,12);camera.lookAt(0,0,-12);
+createScene();boardGroup.position.copy(centerAt(0)).add(new THREE.Vector3(0,-.8,0));camera.position.set(0,7,12);camera.lookAt(0,0,-12);
 </script>
 </body>
 </html>
