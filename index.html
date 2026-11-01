@@ -101,7 +101,9 @@ let best=Number(localStorage.getItem(BEST_KEY)||0);bestEl.textContent=best?forma
 
 function format(s){const m=Math.floor(s/60),sec=(s%60).toFixed(2).padStart(5,'0');return String(m).padStart(2,'0')+':'+sec}
 function showToast(t){toast.textContent=t;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800)}
-function centerAt(t){const z=-t*courseLength;return new THREE.Vector3(Math.sin(t*Math.PI*3.2)*34+Math.sin(t*Math.PI*7.1)*10,2+Math.sin(t*Math.PI*2)*2,z)}
+function terrainHeight(x,z){return 1.45*Math.sin(x*.012+z*.004)+1.05*Math.cos(z*.009-x*.006)+.35*Math.sin((x+z)*.018)}
+function centerAt(t){const z=-t*courseLength,x=Math.sin(t*Math.PI*3.2)*34+Math.sin(t*Math.PI*7.1)*10;return new THREE.Vector3(x,terrainHeight(x,z)+1.1,z)}
+function createTerrain(){const size=1800,segments=150,verts=[],indices=[];for(let iz=0;iz<=segments;iz++){const z=400-size*iz/segments;for(let ix=0;ix<=segments;ix++){const x=-900+size*ix/segments;verts.push(x,terrainHeight(x,z),z)}}for(let iz=0;iz<segments;iz++)for(let ix=0;ix<segments;ix++){const a=iz*(segments+1)+ix,b=a+1,c=a+segments+1,d=c+1;indices.push(a,b,c,b,d,c)}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();const ground=new THREE.Mesh(geo,makeMat(0x526c55));ground.receiveShadow=true;scene.add(ground)}
 function tangentAt(t){const a=centerAt(Math.max(0,t-.001)),b=centerAt(Math.min(1,t+.001));return b.sub(a).normalize()}
 function frameAt(t){const p=centerAt(t),tan=tangentAt(t),right=new THREE.Vector3(tan.z,0,-tan.x).normalize();return {p,tan,right}}
 function makeMat(color,rough=.8){return new THREE.MeshStandardMaterial({color,roughness:rough})}
