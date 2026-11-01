@@ -121,7 +121,7 @@ function reset(){running=false;start()}
 function complete(){running=false;finished=true;if(!best||elapsed<best){best=elapsed;localStorage.setItem(BEST_KEY,String(best));bestEl.textContent=format(best);showToast('NEW PERSONAL BEST!')}else showToast('FINISH — '+format(elapsed));try{localStorage.setItem(GHOST_KEY,JSON.stringify(ghost))}catch{};menu.classList.remove('hidden');menu.querySelector('h1').innerHTML='RUN<br><span>COMPLETE.</span>';menu.querySelector('.desc').innerHTML='TIME　'+format(elapsed)+'<br>もう一度走って記録を更新しよう。';document.querySelector('#startBtn').textContent='RUN AGAIN →'}
 function update(dt){
  const accelerate=keys.has('ArrowUp')||keys.has('KeyW'),brake=keys.has('ArrowDown')||keys.has('KeyS'),left=keys.has('ArrowLeft')||keys.has('KeyA'),right=keys.has('ArrowRight')||keys.has('KeyD');
- const target=(right?1:0)-(left?1:0);steer=THREE.MathUtils.damp(steer,target,5,dt);
+ const target=(left?1:0)-(right?1:0);steer=THREE.MathUtils.damp(steer,target,5,dt);
  speed+= (accelerate?20:6.8)*dt;if(brake)speed-=28*dt;speed-=speed*.018*dt;speed=THREE.MathUtils.clamp(speed,0,44);
  const f=currentFrame(),curvature=Math.sin(progress*Math.PI*6.4)*.15+Math.cos(progress*Math.PI*14.2)*.08;
  // 横方向の位置は慣性を保つ。道路中央へ自動で吸い戻す処理や強制クランプは行わない。
@@ -143,7 +143,7 @@ function update(dt){
 function updateCamera(dt){
  const f=currentFrame(),target=boardGroup.position.clone(),forward=f.tan.clone();
  let pos,look;
- if(camMode==='first'){pos=target.clone().add(new THREE.Vector3(0,1.25,0)).addScaledVector(forward,.25);look=pos.clone().addScaledVector(forward,35)}
+ if(camMode==='first'){pos=target.clone().add(new THREE.Vector3(0,1.45,0));look=pos.clone().addScaledVector(forward,35).negate().add(pos)}
  else{const distance=camMode==='wide'?15:9,height=camMode==='wide'?7:4.6;pos=target.clone().addScaledVector(forward,-distance);pos.y+=height;look=target.clone().addScaledVector(forward,13);look.y+=1}
  camera.position.lerp(pos,1-Math.pow(.001,dt));camera.lookAt(look);
 }
