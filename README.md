@@ -1,37 +1,43 @@
-# DOWNHILL — Touge Time Attack
+# DOWNHILL v2.0 — Urban Arcade Skateboarding
 
-A browser-based 3D downhill skateboard time-attack prototype set on a fictional Japanese mountain pass.
+A browser-based 3D skateboard arcade game in development. The new direction is a fictional Japanese downtown with a visual style between realistic 3D and anime, comedic presentation, obstacles, ramps, tricks and combo scoring.
 
-## Play locally
-Run a static server from the repository root:
+## Run locally
+
+From the repository root:
 
 ```bash
 python -m http.server 8000
 ```
 
-Then visit http://localhost:8000. The game loads Three.js from jsDelivr, so an internet connection is required.
+Then open http://localhost:8000. Three.js is loaded from jsDelivr, so an internet connection is required.
 
 ## Controls
+
 - W / Up Arrow: accelerate
 - S / Down Arrow: brake
 - A / Left Arrow and D / Right Arrow: steer
 - Space: restart the run
-- Camera button: cycle chase, wide, and first-person views
+- Camera button: cycle chase, wide and first-person views
 - Touch devices: on-screen steering and throttle/brake controls
 
-## Included in this prototype
-- Procedural mountain-pass scenery and road
-- Arcade-style downhill skateboard movement
-- Timer, speed display, and local personal best
-- Restart and selectable camera views
-- Responsive desktop/mobile layout
+## Current prototype
 
-## Roadmap
-- Improve rider and skateboard animation
-- Add proper checkpoints and course progression
-- Add deterministic ghost replay
-- Add more courses and visual polish
-- Add online leaderboard only with a trusted backend that validates runs server-side and rate-limits submissions
+- Three.js single-file browser prototype
+- Existing procedural course and skateboard/rider model
+- Timer, speed, local best time and camera selection
+- Lobby with locally stored player name
+- Online menu is a placeholder; no online service is connected
 
-## Notes
-This is an early prototype. Physics, course visuals, collision handling, and ghost replay are still being developed. Online leaderboard is not connected yet.
+## DOWNHILL v2.0 roadmap
+
+1. Phase 0: fix start position, course heading, board roll axis and lean direction.
+2. Phase 1: arcade handling, jumping, landing and a three-mistake limit.
+3. Phase 2: Japanese downtown course, buildings, obstacles and ramps.
+4. Phase 3: tricks, grinds, combos and scoring.
+5. Phase 4: comedic animations, reactions, audio and HUD polish.
+6. Phase 5: additional courses, ghosts and secure online ranking.
+
+## Status
+
+Phase 0 foundation corrections have been applied in the current prototype. The new urban course, mistake system, ramps and trick gameplay are not implemented yet. Static source checks are not a substitute for browser playtesting. Online ranking and ghost sharing are not connected.
